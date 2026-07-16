@@ -24,7 +24,7 @@ def save_score_to_disk(username, prompt, score):
         with open("scores.txt", "a", encoding="utf-8") as file:
             file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {prompt}\n")
     except Exception as e:
-        st.error(f"Data Write Failure: {e}"))
+        st.error(f"Data Write Failure: {e}")
 
 # --- PROMPT EVALUATION ENGINE ---
 def evaluate_prompt_string(prompt):
