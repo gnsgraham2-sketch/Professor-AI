@@ -291,8 +291,9 @@ elif st.session_state.current_page == "Test Lab":
         else:
             score, breakdown = evaluate_prompt_string(user_prompt)
             st.session_state.user_scores.append(score)
-            save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score)
-            
+            save_score_to_dusersisk(st.session_state.username or "Anonymous", user_prompt, score)
+            with open(r"C:\Users\gabriel.graham\downloads\scores.txt","w") as file:
+                file.write(st.session_state.username or "Anonymous", user_prompt, score)
             st.success(f"Score: {score} Points | " + " | ".join(breakdown[:3]))
             
             if st.session_state.current_try >= 3:
