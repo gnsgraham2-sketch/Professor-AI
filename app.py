@@ -20,14 +20,11 @@ if "selected_topic" not in st.session_state:
     st.session_state.selected_topic = None
 
 def save_score_to_disk(username, prompt, score):
-    """
-    SCIENCE FAIR METHOD: Appends empirical execution tracking records to a structured log file.
-    """
     try:
-        with open(DATA_FILE, "a", encoding="utf-8") as file:
+        with open("scores.txt", "a", encoding="utf-8") as file:
             file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {prompt}\n")
     except Exception as e:
-        st.error(f"Data Write Failure: {e}")
+        st.error(f"Data Write Failure: {e}"))
 
 # --- PROMPT EVALUATION ENGINE ---
 def evaluate_prompt_string(prompt):
