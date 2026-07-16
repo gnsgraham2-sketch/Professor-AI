@@ -282,27 +282,28 @@ elif st.session_state.current_page == "Test Lab":
     
     user_prompt = st.text_input("Type your test query here:", key="prompt_entry_box")
     
+    # --- THIS IS THE EVALUATE BUTTON CLICK BLOCK ---
     if st.button("Evaluate Query Performance", disabled=(st.session_state.current_try > 3)):
         if user_prompt.strip() == "":
             st.error("Please type a prompt first!")
         else:
+            # 1. Run the scoring evaluation
             score, breakdown = evaluate_prompt_string(user_prompt)
             st.session_state.user_scores.append(score)
-            def save_score_to_disk(username, prompt, score):
-    try:
-        # Saving to "scores.txt" relatively so it works on both your PC and Streamlit Cloud
-        with open("scores.txt", "a", encoding="utf-8") as file:
-            file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {prompt}\n")
-    except Exception as e:
-        st.error(f"Data Write Failure: {e}")
+            
+            # 2. Call the function cleanly (No "def" or nested "try/except" blocks here!)
+            save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score)
+            
+            # 3. Print the feedback message to the user
             st.success(f"Score: {score} Points | " + " | ".join(breakdown[:3]))
             
+            # 4. Increment or lock the attempts tracker
             if st.session_state.current_try >= 3:
                 st.session_state.current_try = 4 # Complete flag
             else:
                 st.session_state.current_try += 1
                 
-    # Graph Area
+    # --- Graph Area ---
     if len(st.session_state.user_scores) > 0:
         render_analytics_graph()
 
@@ -315,3 +316,15 @@ elif st.session_state.current_page == "Test Lab":
     if st.button("↩ Back to Menu"):
         st.session_state.current_page = "Home"
         st.rerun()
+
+    # --- ADMIN FILE VIEWER (Displays inside the Test Lab screen) ---
+    st.write("---")
+    st.subheader("📋 Saved System Logs (Admin View)")
+    
+    # We check if 'scores.txt' exists. If yes, read it and display it!
+    if os.path.exists("scores.txt"):
+        with open("scores.txt", "r", encoding="utf-8") as file:
+            log_data = file.read()
+        st.text_area("Scores Log File Contents:", value=log_data, height=150)
+    else:
+        st.info("No scores saved yet! Submit a prompt above to generate the log file.")
