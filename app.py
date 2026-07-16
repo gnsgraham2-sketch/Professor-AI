@@ -292,9 +292,6 @@ elif st.session_state.current_page == "Test Lab":
             score, breakdown = evaluate_prompt_string(user_prompt)
             st.session_state.user_scores.append(score)
             def save_score_to_disk(username, prompt, score):
-    """
-    SCIENCE FAIR METHOD: Appends execution tracking records to a relative log file.
-    """
     try:
         # Saving to "scores.txt" relatively so it works on both your PC and Streamlit Cloud
         with open("scores.txt", "a", encoding="utf-8") as file:
