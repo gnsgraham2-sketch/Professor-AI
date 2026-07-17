@@ -4,7 +4,7 @@
 
 ### Replace your entire `app.py` with this updated code:
 
-```python
+
 import streamlit as st
 import matplotlib.pyplot as plt
 import os
