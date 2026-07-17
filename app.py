@@ -289,4 +289,3 @@ if os.path.exists(DATA_FILE):
 else:
     st.info("No scores saved yet! Submit a prompt in the Test Lab to generate the log file.")
 
-```
