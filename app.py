@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import os
+import re
 
 # --- LEVEL-SPECIFIC SCOREBOARD MAP ---
 SCOREBOARD_FILES = {
@@ -33,7 +34,9 @@ def save_score_to_disk(username, prompt, score, level):
             if level == "true master":
                 file.write(f"User: {username} | Action: {prompt}\n")
             else:
-                file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {prompt}\n")
+                # Clean prompt of newlines to preserve simple 1-line log parsing structure
+                clean_prompt = prompt.replace('\n', ' ')
+                file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {clean_prompt}\n")
     except Exception as e:
         st.error(f"Data Write Failure: {e}")
 
@@ -140,7 +143,6 @@ st.markdown("""
     .feature-box { background-color: rgba(17, 30, 37, 0.05); padding: 20px; border-radius: 12px; border-left: 5px solid #111E25; }
     div.stButton > button { background-color: #111E25; color: white; border-radius: 8px; font-weight: bold; width: 100%; height: 50px; }
     
-    /* Dedicated Custom Styling block for Score elements */
     .white-score-text {
         color: #FFFFFF !important;
         background-color: #111E25;
@@ -307,10 +309,8 @@ elif st.session_state.current_page == "Test Lab":
             st.session_state.user_scores.append(score)
             save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score, st.session_state.selected_level)
             
-            # --- CRITICAL UPDATE: RENDER EVALUATION METRICS TEXT STRINGS IN SECURE WHITE ---
             results_string = f"Final Score: {score}/100 | " + " | ".join(breakdown)
             st.markdown(f'<div class="white-score-text">{results_string}</div>', unsafe_allow_html=True)
-            
             st.session_state.current_try += 1
                 
     if len(st.session_state.user_scores) > 0:
@@ -320,16 +320,69 @@ elif st.session_state.current_page == "Test Lab":
         st.session_state.current_page = "Home"
         st.rerun()
 
-# --- ADMIN VIEW ---
+# --- DYNAMIC SORTED LEADERBOARD LIVE-VIEW ---
 st.write("---")
-st.subheader("📋 SEGMENTED SCOREBOARDS (Admin View)")
+st.subheader("🏆 LIVE TRACK LEADERBOARDS")
 selected_board = st.selectbox("View Scoreboard Track:", options=["Beginner Track Logs", "Advanced Track Logs", "Professor Track Logs", "True Master Premium Logs"])
 board_mapping = {"Beginner Track Logs": "beginner", "Advanced Track Logs": "advanced", "Professor Track Logs": "professor", "True Master Premium Logs": "true master"}
-target_file_name = SCOREBOARD_FILES[board_mapping[selected_board]]
+target_key = board_mapping[selected_board]
+target_file_name = SCOREBOARD_FILES[target_key]
 
 if os.path.exists(target_file_name):
+    parsed_entries = []
     with open(target_file_name, "r", encoding="utf-8") as file:
-        log_data = file.read()
-    st.text_area(f"Raw Logs [{target_file_name}]:", value=log_data, height=150)
+        for line in file:
+            if not line.strip():
+                continue
+            if target_key == "true master":
+                # True master logs actions instead of numeric scores
+                user_match = re.search(r"User:\s*([^|]+)", line)
+                action_match = re.search(r"Action:\s*(.+)", line)
+                u = user_match.group(1).strip() if user_match else "Unknown"
+                act = action_match.group(1).strip() if action_match else "N/A"
+                parsed_entries.append({"User": u, "Action Logged": act, "_sort_val": 0})
+            else:
+                # Regular metrics lines parsing via regex
+                user_match = re.search(r"User:\s*([^|]+)", line)
+                try_match = re.search(r"Try:\s*(\d+)", line)
+                score_match = re.search(r"Score:\s*(\d+)", line)
+                prompt_match = re.search(r"Prompt:\s*(.+)", line)
+                
+                u = user_match.group(1).strip() if user_match else "Unknown"
+                t = try_match.group(1).strip() if try_match else "1"
+                s = int(score_match.group(1).strip()) if score_match else 0
+                p = prompt_match.group(1).strip() if prompt_match else ""
+                
+                parsed_entries.append({"User": u, "Try": t, "Score": s, "Prompt Provided": p, "_sort_val": s})
+    
+    if parsed_entries:
+        if target_key == "true master":
+            # Display master course log entries sequentially
+            st.dataframe(parsed_entries, use_container_width=True)
+        else:
+            # Sort entries from highest to lowest score
+            sorted_entries = sorted(parsed_entries, key=lambda x: x["_sort_val"], reverse=True)
+            
+            # Reconstruct dictionary rows to include ranking metrics seamlessly
+            leaderboard_table = []
+            for rank_index, item in enumerate(sorted_entries, start=1):
+                # Format rankings into readable ordinal positions (e.g. 1st, 2nd, 3rd)
+                if rank_index == 1: suffix = "st"
+                elif rank_index == 2: suffix = "nd"
+                elif rank_index == 3: suffix = "rd"
+                else: suffix = "th"
+                
+                row = {
+                    "Rank Placement": f"{rank_index}{suffix}",
+                    "User": item["User"],
+                    "Score Out of 100": item["Score"],
+                    "Attempt Target": item["Try"],
+                    "Evaluated Prompt String": item["Prompt Provided"]
+                }
+                leaderboard_table.append(row)
+                
+            st.dataframe(leaderboard_table, use_container_width=True)
+    else:
+        st.info("No active records logged inside this track file yet.")
 else:
     st.info("No records recorded for this track yet.")
