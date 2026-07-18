@@ -47,7 +47,7 @@ def evaluate_prompt_string(prompt):
     if word_count == 0:
         return 0, ["❌ Empty query string flagged."]
 
-    # 1. Role Persona Parameter (All levels benefit)
+    # 1. Role Persona Parameter
     professions = ["tutor", "teacher", "doctor", "lawyer", "engineer", "scientist", "programmer", "expert", "professor"]
     if any(prof in lowered for prof in professions):
         score += 20
@@ -55,7 +55,7 @@ def evaluate_prompt_string(prompt):
     else:
         metrics_passed.append("Missing explicit Persona constraints.")
     
-    # 2. Inquiry Structure Parameter (All levels benefit)
+    # 2. Inquiry Structure Parameter
     question_starters = ["what", "how", "why", "can", "could", "where", "who", "is", "are"]
     if prompt.endswith("?") or any(lowered.startswith(s) for s in question_starters):
         score += 40
@@ -67,7 +67,6 @@ def evaluate_prompt_string(prompt):
     action_keywords = ["explain", "summarize", "analyze", "simplify", "debug", "format", "list", "bullet", "limit"]
     found_keywords = [kw for kw in action_keywords if kw in lowered]
     
-    # Target scale shifts dynamically based on chosen path
     req = 5 if st.session_state.selected_level in ["advanced", "professor"] else 3
     
     if len(found_keywords) >= req:
@@ -81,11 +80,9 @@ def evaluate_prompt_string(prompt):
     score += word_count
     metrics_passed.append(f"Linguistic Expansion: +{word_count} Points")
 
-    # Safety clamp floor limits
     if score < 0:
         score = 0
 
-    # Universal 100-point cap ceiling
     if score > 100:
         metrics_passed.append(f"⚠️ Limit: Score capped at 100 (Raw: {score})")
         score = 100
@@ -142,6 +139,18 @@ st.markdown("""
     .hero-text { font-size: 1.2rem; line-height: 1.6; color: #1c2d37; margin-bottom: 25px; }
     .feature-box { background-color: rgba(17, 30, 37, 0.05); padding: 20px; border-radius: 12px; border-left: 5px solid #111E25; }
     div.stButton > button { background-color: #111E25; color: white; border-radius: 8px; font-weight: bold; width: 100%; height: 50px; }
+    
+    /* Dedicated Custom Styling block for Score elements */
+    .white-score-text {
+        color: #FFFFFF !important;
+        background-color: #111E25;
+        padding: 15px;
+        border-radius: 8px;
+        font-weight: 500;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        border-left: 5px solid #81C784;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -280,7 +289,6 @@ elif st.session_state.current_page == "Syllabus":
 elif st.session_state.current_page == "Test Lab":
     st.title("🧪 Prompt Assessment Engine Lab")
     
-    # --- RENDER CHALLENGE NOTICES EXPLICITLY HERE ---
     if st.session_state.selected_level == "beginner":
         st.info("💡 **BEGINNER CHALLENGE**: Include a clear persona profile and hit at least **3** action keywords (explain, summarize, analyze, simplify, debug, format, list, bullet, limit).")
     elif st.session_state.selected_level == "advanced":
@@ -298,7 +306,11 @@ elif st.session_state.current_page == "Test Lab":
             score, breakdown = evaluate_prompt_string(user_prompt)
             st.session_state.user_scores.append(score)
             save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score, st.session_state.selected_level)
-            st.success(f"Final Score: {score}/100 | " + " | ".join(breakdown))
+            
+            # --- CRITICAL UPDATE: RENDER EVALUATION METRICS TEXT STRINGS IN SECURE WHITE ---
+            results_string = f"Final Score: {score}/100 | " + " | ".join(breakdown)
+            st.markdown(f'<div class="white-score-text">{results_string}</div>', unsafe_allow_html=True)
+            
             st.session_state.current_try += 1
                 
     if len(st.session_state.user_scores) > 0:
