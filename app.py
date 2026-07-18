@@ -279,13 +279,32 @@ elif st.session_state.current_page == "Test Lab":
         st.session_state.current_page = "Home"
         st.rerun()
 
-# --- ADMIN FILE VIEWER ---
+# --- ADMIN FILE VIEWER (Sorted Highest to Lowest) ---
 st.write("---")
-st.subheader("📋 Saved System Logs (Admin View)")
+st.subheader("📋 Saved System Logs (Admin View - Highest Scores First)")
+
 if os.path.exists(DATA_FILE):
     with open(DATA_FILE, "r", encoding="utf-8") as file:
-        log_data = file.read()
-    st.text_area("Scores Log File Contents:", value=log_data, height=150)
+        log_lines = file.readlines()
+    
+    # Helper function to find the score inside the text line for mathematical sorting
+    def extract_score(line):
+        try:
+            # Looks for "Score: " and grabs the numbers following it
+            if "Score: " in line:
+                parts = line.split("Score: ")[1]
+                score_str = parts.split(" |")[0].strip()
+                return int(score_str)
+        except Exception:
+            pass
+        return 0 # Default fallback if line layout is modified
+
+    # Sort lines descending (highest score first) based on our helper function
+    log_lines.sort(key=extract_score, reverse=True)
+    
+    # Recombine the sorted lines back into a single block of text
+    sorted_log_data = "".join(log_lines)
+    
+    st.text_area("Scores Log File Contents (Sorted):", value=sorted_log_data, height=180)
 else:
     st.info("No scores saved yet! Submit a prompt in the Test Lab to generate the log file.")
-
