@@ -116,7 +116,7 @@ TOPICS = {
 }
 
 # --- WEB APP NAVIGATION & LAYOUT ---
-st.set_page_config(page_title="Professor AI | Mastery Platform", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="GramAI | Mastery Platform", page_icon="🤖", layout="centered")
 
 st.markdown("""
     <style>
@@ -130,19 +130,19 @@ st.markdown("""
 
 # Navigation Router
 if st.session_state.current_page == "Home":
-    st.title("🤖 PROFESSOR AI")
+    st.title("🤖 GRAMAI")
     st.subheader("Master the Art of Algorithmic Command")
     
     st.markdown("""
     <div class="hero-text">
-    Professor AI is a strategic educational ecosystem built to transform how humans interact with Artificial Intelligence. 
+    GramAI is a strategic educational ecosystem built to transform how humans interact with Artificial Intelligence. 
     Our curriculum bridges the gap between basic chat interactions and professional-grade engineering. Whether you are 
     automating a business or exploring the ethics of AI governance, our platform provides the tools to dominate 
     the digital frontier.
     </div>
     """, unsafe_allow_html=True)
     
-    st.write("### 🚀 Why Choose Professor AI?")
+    st.write("### 🚀 Why Choose GramAI?")
     
     col1, col2 = st.columns(2)
     with col1:
