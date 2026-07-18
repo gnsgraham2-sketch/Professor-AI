@@ -113,7 +113,7 @@ TOPICS = {
     "true master": {
         "grow_business": {"title": "How to use AI to grow your business", "desc": "Deploy AI for automating customer pipelines, predictive financial analysis, and scaling marketing production dynamically.", "url": "https://www.hbr.org/"},
         "agentic_systems": {"title": "What are Agentic Architecture & Autonomous Systems", "desc": "Move beyond chatbots. Agentic AI designs independent loops where software sets goals, executes actions, and reviews outcomes self-sufficiently.", "url": "https://www.gartner.com/"},
-        "knowledge_seo": {"title": "To optimize your intellectual content for SEO's, Large Language Models (LLMs), and semantic discovery, you must shift focus from old keyword matching to structuring your data for clear machine comprehension. , "url": "https://www.searchengineland.com/"},
+        "knowledge_seo": {"title":"How to use your knowldege of AI to SEO", "desc": "To optimize your intellectual content for SEO's, Large Language Models (LLMs), and semantic discovery, you must shift focus from old keyword matching to structuring your data for clear machine comprehension. , "url": "https://www.searchengineland.com/"},
         "ai_governance": {"title": "How to understand AI Governance, Alignment, & Safety Engineering", "desc": "Examine code boundary conditions, model bias control layers, ethical alignment parameters, and compliance standards.", "url": "https://www.openai.com/safety/"},
         "tie_off": {"title": "How to tie all this knowledge off", "desc": "Unify your foundational, engineering, macro-economic, and organizational workflows into an integrated action strategy.", "url": "https://github.com/"}
     }
