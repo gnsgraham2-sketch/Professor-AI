@@ -1,2 +1,2 @@
-# Professor-AI
+# GramAI
 a great business idea
