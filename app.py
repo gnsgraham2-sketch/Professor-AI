@@ -10,7 +10,7 @@ SCOREBOARD_FILES = {
     "true master": "scores_truemaster.txt"
 }
 
-# Initialize global variables across browser refreshes
+# Initialize global variables
 if "user_scores" not in st.session_state:
     st.session_state.user_scores = []
 if "current_try" not in st.session_state:
@@ -27,7 +27,6 @@ if "master_confirmed" not in st.session_state:
     st.session_state.master_confirmed = False
 
 def save_score_to_disk(username, prompt, score, level):
-    """Saves scores to the specific file mapped to the current level."""
     target_file = SCOREBOARD_FILES.get(level, "scores_general.txt")
     try:
         with open(target_file, "a", encoding="utf-8") as file:
@@ -43,43 +42,35 @@ def evaluate_prompt_string(prompt):
     score = 0
     metrics_passed = []
     lowered = prompt.lower()
-    words_list = prompt.split()
-    word_count = len(words_list)
+    word_count = len(prompt.split())
 
     if word_count == 0:
         return 0, ["❌ Empty query string flagged."]
 
-    professions = ["tutor", "teacher", "doctor", "lawyer", "engineer", "scientist", "programmer", "coder", "developer", "expert", "professor", "assistant"]
+    # Metrics logic
+    professions = ["tutor", "teacher", "doctor", "lawyer", "engineer", "scientist", "programmer", "expert", "professor"]
     if any(prof in lowered for prof in professions):
         score += 20
-        metrics_passed.append("Role Persona Met (+20)")
-    else:
-        metrics_passed.append("Missing Persona constraints.")
-
-    question_starters = ["what", "how", "why", "can", "could", "where", "who", "is", "are"]
-    has_question_word = any(lowered.startswith(start) for start in question_starters)
-    if prompt.endswith("?") or has_question_word:
+        metrics_passed.append("Persona Validation: Met (+20)")
+    
+    question_starters = ["what", "how", "why", "can", "could"]
+    if prompt.endswith("?") or any(lowered.startswith(s) for s in question_starters):
         score += 40
-        metrics_passed.append("Direct Question parameters identified (+40)")
-    else:
-        metrics_passed.append("Missing explicit interrogative query structure.")
+        metrics_passed.append("Inquiry Structure: Met (+40)")
 
-    action_keywords = ["explain", "summarize", "analyze", "simplify", "debug", "format", "list", "bullet", "limit", "words", "paragraphs"]
+    action_keywords = ["explain", "summarize", "analyze", "simplify", "debug", "format", "list"]
     found_keywords = [kw for kw in action_keywords if kw in lowered]
-    required_count = 5 if st.session_state.selected_level in ["advanced", "professor"] else 3
-
-    if len(found_keywords) >= required_count:
+    req = 5 if st.session_state.selected_level in ["advanced", "professor"] else 3
+    if len(found_keywords) >= req:
         score += 20
-        metrics_passed.append(f"Keyword Limit Met ({len(found_keywords)}/{required_count}) (+20)")
-    else:
-        metrics_passed.append(f"Keyword Challenge Failed ({len(found_keywords)}/{required_count})")
+        metrics_passed.append(f"Command Density: {len(found_keywords)}/{req} (+20)")
 
     score += word_count
-    metrics_passed.append(f"Linguistic Scale Expansion: +{word_count} Points")
+    metrics_passed.append(f"Linguistic Expansion: +{word_count}")
 
-    # --- CRITICAL UPDATE: SCORE LIMIT CAP EXFORCED AT 100 ---
+    # Universal 100-point cap
     if score > 100:
-        metrics_passed.append(f"⚠️ Score capped at maximum limit (Raw calculated value was {score}).")
+        metrics_passed.append(f"⚠️ Limit: Score capped at 100 (Raw: {score})")
         score = 100
 
     return score, metrics_passed
@@ -91,15 +82,10 @@ def render_analytics_graph():
     ax.set_facecolor('#1c2d37')
     attempts = [1, 2, 3]
     padded_scores = st.session_state.user_scores + [0] * (3 - len(st.session_state.user_scores))
-    ax.plot(attempts, padded_scores, marker='o', color='#81C784', linewidth=2, markersize=6)
-    ax.set_title(f"{st.session_state.selected_level.capitalize()} Performance Metrics", color='white', fontsize=10, fontweight='bold')
-    ax.set_ylabel("Matrix Score Output", color='white', fontsize=8)
+    ax.plot(attempts, padded_scores, marker='o', color='#81C784', linewidth=2)
+    ax.set_title(f"{st.session_state.selected_level.upper()} Performance Analytics", color='white', fontsize=10)
     ax.set_xticks(attempts)
-    ax.set_xticklabels(["Try 1", "Try 2", "Try 3"], color='white', fontsize=8)
-    ax.tick_params(colors='white', labelsize=8)
-    
-    # Adjusted ceiling boundary to 110 so a 100-point capped max line sits perfectly near the top
-    ax.set_ylim(0, 110) 
+    ax.set_ylim(0, 110)
     ax.grid(True, color='#2c3d47', linestyle='--')
     st.pyplot(fig)
 
@@ -130,21 +116,53 @@ TOPICS = {
 }
 
 # --- WEB APP NAVIGATION & LAYOUT ---
-st.set_page_config(page_title="Professor AI", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="Professor AI | Mastery Platform", page_icon="🤖", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #7FFFD4; color: #111E25; }
-    h1, h2, h3 { color: #111E25 !important; }
-    div.stButton > button { background-color: #111E25; color: white; border-radius: 8px; }
+    h1, h2, h3 { color: #111E25 !important; font-family: 'Helvetica Neue', sans-serif; }
+    .hero-text { font-size: 1.2rem; line-height: 1.6; color: #1c2d37; margin-bottom: 25px; }
+    .feature-box { background-color: rgba(17, 30, 37, 0.05); padding: 20px; border-radius: 12px; border-left: 5px solid #111E25; }
+    div.stButton > button { background-color: #111E25; color: white; border-radius: 8px; font-weight: bold; width: 100%; height: 50px; }
     </style>
 """, unsafe_allow_html=True)
 
 # Navigation Router
 if st.session_state.current_page == "Home":
-    st.title("🤖 Professor AI")
-    st.subheader("Welcome to Professor AI")
-    if st.button("Launch Application ➔"):
+    st.title("🤖 PROFESSOR AI")
+    st.subheader("Master the Art of Algorithmic Command")
+    
+    st.markdown("""
+    <div class="hero-text">
+    Professor AI is a strategic educational ecosystem built to transform how humans interact with Artificial Intelligence. 
+    Our curriculum bridges the gap between basic chat interactions and professional-grade engineering. Whether you are 
+    automating a business or exploring the ethics of AI governance, our platform provides the tools to dominate 
+    the digital frontier.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("### 🚀 Why Choose Professor AI?")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        <div class="feature-box">
+        <strong>⚡ Real-Time Prompt Grading</strong><br>
+        Stop guessing. Our proprietary Analytics Engine evaluates your prompts based on Persona, Inquiry Depth, and Command Density.
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="feature-box">
+        <strong>🏆 Segmented Scoreboards</strong><br>
+        Benchmark your progress. Compete in isolated leaderboards for Beginner, Advanced, and Professor-level tracks.
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.write("---")
+    if st.button("ENTER THE LAB ➔"):
         st.session_state.current_page = "User Setup"
         st.rerun()
 
@@ -156,7 +174,6 @@ elif st.session_state.current_page == "User Setup":
             st.warning("Please enter a username!")
         else:
             st.session_state.username = username.strip()
-            st.success(f"Username '{st.session_state.username}' saved successfully!")
             st.session_state.current_page = "Dashboard"
             st.rerun()
     if st.button("Back Home"):
@@ -175,7 +192,6 @@ elif st.session_state.current_page == "Dashboard":
 
 elif st.session_state.current_page == "Difficulty":
     st.title("Select Your Difficulty Level")
-    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         if st.button("Beginner", use_container_width=True):
@@ -202,12 +218,11 @@ elif st.session_state.current_page == "Difficulty":
 elif st.session_state.current_page == "Master Gate":
     st.title("👑 True Master Verification")
     st.subheader("Do you want to actually learn AI?")
-    
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Yes, I am ready.", use_container_width=True):
             st.session_state.master_confirmed = True
-            save_score_to_disk(st.session_state.username or "Anonymous", "Accessed True Master Course Syllabus Structure", 0, "true master")
+            save_score_to_disk(st.session_state.username or "Anonymous", "Accessed Master Course", 0, "true master")
             st.session_state.current_page = "Syllabus"
             st.rerun()
     with col2:
@@ -218,7 +233,6 @@ elif st.session_state.current_page == "Master Gate":
 elif st.session_state.current_page == "Syllabus":
     st.title("Dynamic Learning Portal")
     st.subheader(f"Track: {st.session_state.selected_level.upper()}")
-    
     level_data = TOPICS[st.session_state.selected_level]
     
     if st.session_state.selected_level == "true master":
@@ -237,9 +251,7 @@ elif st.session_state.current_page == "Syllabus":
         st.markdown(f"[🔗 Lesson Resources]({st.session_state.selected_topic['url']})")
 
     st.write("---")
-    
     if st.session_state.selected_level == "true master":
-        st.success("🎉 You have completed the True Master Syllabus! This course track bypasses the Lab Analytics testing suite.")
         if st.button("↩ Exit to Main Menu"):
             st.session_state.current_page = "Home"
             st.rerun()
@@ -252,64 +264,36 @@ elif st.session_state.current_page == "Syllabus":
 
 elif st.session_state.current_page == "Test Lab":
     st.title("🧪 Prompt Assessment Engine Lab")
-    if st.session_state.selected_level == "professor":
-        st.warning("🎓 PROFESSOR CHALLENGE: 5 keywords, state your AI use-case reason, length preference, format style, & min 30 words!")
-    elif st.session_state.selected_level == "advanced":
-        st.warning("🔥 ADVANCED CHALLENGE: You must hit at least 5 distinct action keywords!")
-    else:
-        st.info("💡 BEGINNER CHALLENGE: Try including at least 3 action keywords.")
-
-    st.write(f"**Current Attempt Tracker**: Attempt {st.session_state.current_try} / 3")
+    st.write(f"**Current Tracker**: Attempt {st.session_state.current_try} / 3")
     user_prompt = st.text_input("Type your test query here:", key="prompt_entry_box")
     
-    if st.button("Evaluate Query Performance", disabled=(st.session_state.current_try > 3)):
+    if st.button("Evaluate Performance", disabled=(st.session_state.current_try > 3)):
         if user_prompt.strip() == "":
             st.error("Please type a prompt first!")
         else:
             score, breakdown = evaluate_prompt_string(user_prompt)
             st.session_state.user_scores.append(score)
             save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score, st.session_state.selected_level)
-            st.success(f"Score: {score} Points | " + " | ".join(breakdown[:3]))
-            
-            if st.session_state.current_try >= 3:
-                st.session_state.current_try = 4
-            else:
-                st.session_state.current_try += 1
+            st.success(f"Final Score: {score}/100 | " + " | ".join(breakdown[:2]))
+            st.session_state.current_try += 1
                 
     if len(st.session_state.user_scores) > 0:
         render_analytics_graph()
-
-    if st.session_state.current_try > 3:
-        st.error("Testing Cycle Terminated (3/3 Tries Exhausted)")
-        improvement = st.session_state.user_scores[-1] - st.session_state.user_scores[0]
-        st.metric(label="Optimization Trajectory Variance", value=f"+{improvement} Points")
         
     if st.button("↩ Back to Menu"):
         st.session_state.current_page = "Home"
         st.rerun()
 
-# --- DYNAMIC ISOLATED SCOREBOARD VIEW ---
+# --- ADMIN VIEW ---
 st.write("---")
-st.subheader("📋 Segmented System Scoreboards (Admin View)")
-
-selected_board = st.selectbox(
-    "Choose Level Scoreboard File to Inspect:",
-    options=["Beginner Track Logs", "Advanced Track Logs", "Professor Track Logs", "True Master Premium Logs"]
-)
-
-board_mapping = {
-    "Beginner Track Logs": "beginner",
-    "Advanced Track Logs": "advanced",
-    "Professor Track Logs": "professor",
-    "True Master Premium Logs": "true master"
-}
-
-target_key = board_mapping[selected_board]
-target_file_name = SCOREBOARD_FILES[target_key]
+st.subheader("📋 SEGMENTED SCOREBOARDS (Admin View)")
+selected_board = st.selectbox("View Scoreboard Track:", options=["Beginner Track Logs", "Advanced Track Logs", "Professor Track Logs", "True Master Premium Logs"])
+board_mapping = {"Beginner Track Logs": "beginner", "Advanced Track Logs": "advanced", "Professor Track Logs": "professor", "True Master Premium Logs": "true master"}
+target_file_name = SCOREBOARD_FILES[board_mapping[selected_board]]
 
 if os.path.exists(target_file_name):
     with open(target_file_name, "r", encoding="utf-8") as file:
         log_data = file.read()
-    st.text_area(f"File Output Viewer [{target_file_name}]:", value=log_data, height=150)
+    st.text_area(f"Raw Logs [{target_file_name}]:", value=log_data, height=150)
 else:
-    st.info(f"No records written to '{target_file_name}' yet!")
+    st.info("No records recorded for this track yet.")
