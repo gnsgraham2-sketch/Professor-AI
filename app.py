@@ -1,16 +1,14 @@
-
-
-
-
-### Replace your entire `app.py` with this updated code:
-
-
 import streamlit as st
 import matplotlib.pyplot as plt
 import os
 
-# --- PERSISTENT DATA CONTROL LAYER ---
-DATA_FILE = "scores.txt"
+# --- LEVEL-SPECIFIC SCOREBOARD MAP ---
+SCOREBOARD_FILES = {
+    "beginner": "scores_beginner.txt",
+    "advanced": "scores_advanced.txt",
+    "professor": "scores_professor.txt",
+    "true master": "scores_truemaster.txt"
+}
 
 # Initialize global variables across browser refreshes
 if "user_scores" not in st.session_state:
@@ -28,10 +26,15 @@ if "selected_topic" not in st.session_state:
 if "master_confirmed" not in st.session_state:
     st.session_state.master_confirmed = False
 
-def save_score_to_disk(username, prompt, score):
+def save_score_to_disk(username, prompt, score, level):
+    """Saves scores to the specific file mapped to the current level."""
+    target_file = SCOREBOARD_FILES.get(level, "scores_general.txt")
     try:
-        with open(DATA_FILE, "a", encoding="utf-8") as file:
-            file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {prompt}\n")
+        with open(target_file, "a", encoding="utf-8") as file:
+            if level == "true master":
+                file.write(f"User: {username} | Action: {prompt}\n")
+            else:
+                file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {prompt}\n")
     except Exception as e:
         st.error(f"Data Write Failure: {e}")
 
@@ -84,7 +87,7 @@ def render_analytics_graph():
     attempts = [1, 2, 3]
     padded_scores = st.session_state.user_scores + [0] * (3 - len(st.session_state.user_scores))
     ax.plot(attempts, padded_scores, marker='o', color='#81C784', linewidth=2, markersize=6)
-    ax.set_title("Prompt Iteration Learning Chart", color='white', fontsize=10, fontweight='bold')
+    ax.set_title(f"{st.session_state.selected_level.capitalize()} Performance Metrics", color='white', fontsize=10, fontweight='bold')
     ax.set_ylabel("Matrix Score Output", color='white', fontsize=8)
     ax.set_xticks(attempts)
     ax.set_xticklabels(["Try 1", "Try 2", "Try 3"], color='white', fontsize=8)
@@ -113,7 +116,7 @@ TOPICS = {
     "true master": {
         "grow_business": {"title": "How to use AI to grow your business", "desc": "Deploy AI for automating customer pipelines, predictive financial analysis, and scaling marketing production dynamically.", "url": "https://www.hbr.org/"},
         "agentic_systems": {"title": "What are Agentic Architecture & Autonomous Systems", "desc": "Move beyond chatbots. Agentic AI designs independent loops where software sets goals, executes actions, and reviews outcomes self-sufficiently.", "url": "https://www.gartner.com/"},
-        "knowledge_seo": {"title":"How to use your knowldege of AI to SEO for your businesses", "desc": "To optimize your intellectual content for SEO's, Large Language Models (LLMs), and semantic discovery, you must shift focus from old keyword matching to structuring your data for clear machine comprehension." , "url": "https://www.searchengineland.com/"},
+        "knowledge_seo": {"title": "How to use your knowledge SEO", "desc": "Optimize your intellectual content for AI search index summaries, large language model ingestion pipelines, and semantic web visibility.", "url": "https://www.searchengineland.com/"},
         "ai_governance": {"title": "How to understand AI Governance, Alignment, & Safety Engineering", "desc": "Examine code boundary conditions, model bias control layers, ethical alignment parameters, and compliance standards.", "url": "https://www.openai.com/safety/"},
         "tie_off": {"title": "How to tie all this knowledge off", "desc": "Unify your foundational, engineering, macro-economic, and organizational workflows into an integrated action strategy.", "url": "https://github.com/"}
     }
@@ -185,7 +188,7 @@ elif st.session_state.current_page == "Difficulty":
     with col4:
         if st.button("True Master 👑", use_container_width=True):
             st.session_state.selected_level = "true master"
-            st.session_state.master_confirmed = False  # Reset prompt gate state
+            st.session_state.master_confirmed = False
             st.session_state.current_page = "Master Gate"
             st.rerun()
 
@@ -197,6 +200,8 @@ elif st.session_state.current_page == "Master Gate":
     with col1:
         if st.button("Yes, I am ready.", use_container_width=True):
             st.session_state.master_confirmed = True
+            # Log successful track entry configuration mapping
+            save_score_to_disk(st.session_state.username or "Anonymous", "Accessed True Master Course Syllabus Structure", 0, "true master")
             st.session_state.current_page = "Syllabus"
             st.rerun()
     with col2:
@@ -210,7 +215,6 @@ elif st.session_state.current_page == "Syllabus":
     
     level_data = TOPICS[st.session_state.selected_level]
     
-    # Grid adjustment for 3 items vs 5 items (True Master track has 5)
     if st.session_state.selected_level == "true master":
         for index, (key, data) in enumerate(level_data.items()):
             if st.button(data["title"], key=f"btn_{key}", use_container_width=True):
@@ -228,7 +232,6 @@ elif st.session_state.current_page == "Syllabus":
 
     st.write("---")
     
-    # Dynamic navigation conditional check
     if st.session_state.selected_level == "true master":
         st.success("🎉 You have completed the True Master Syllabus! This course track bypasses the Lab Analytics testing suite.")
         if st.button("↩ Exit to Main Menu"):
@@ -259,7 +262,7 @@ elif st.session_state.current_page == "Test Lab":
         else:
             score, breakdown = evaluate_prompt_string(user_prompt)
             st.session_state.user_scores.append(score)
-            save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score)
+            save_score_to_disk(st.session_state.username or "Anonymous", user_prompt, score, st.session_state.selected_level)
             st.success(f"Score: {score} Points | " + " | ".join(breakdown[:3]))
             
             if st.session_state.current_try >= 3:
@@ -279,32 +282,28 @@ elif st.session_state.current_page == "Test Lab":
         st.session_state.current_page = "Home"
         st.rerun()
 
-# --- ADMIN FILE VIEWER (Sorted Highest to Lowest) ---
+# --- DYNAMIC ISOLATED SCOREBOARD VIEW ---
 st.write("---")
-st.subheader("📋 Saved System Logs (Admin View - Highest Scores First)")
+st.subheader("📋 Segmented System Scoreboards (Admin View)")
 
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r", encoding="utf-8") as file:
-        log_lines = file.readlines()
-    
-    # Helper function to find the score inside the text line for mathematical sorting
-    def extract_score(line):
-        try:
-            # Looks for "Score: " and grabs the numbers following it
-            if "Score: " in line:
-                parts = line.split("Score: ")[1]
-                score_str = parts.split(" |")[0].strip()
-                return int(score_str)
-        except Exception:
-            pass
-        return 0 # Default fallback if line layout is modified
+selected_board = st.selectbox(
+    "Choose Level Scoreboard File to Inspect:",
+    options=["Beginner Track Logs", "Advanced Track Logs", "Professor Track Logs", "True Master Premium Logs"]
+)
 
-    # Sort lines descending (highest score first) based on our helper function
-    log_lines.sort(key=extract_score, reverse=True)
-    
-    # Recombine the sorted lines back into a single block of text
-    sorted_log_data = "".join(log_lines)
-    
-    st.text_area("Scores Log File Contents (Sorted):", value=sorted_log_data, height=180)
+board_mapping = {
+    "Beginner Track Logs": "beginner",
+    "Advanced Track Logs": "advanced",
+    "Professor Track Logs": "professor",
+    "True Master Premium Logs": "true master"
+}
+
+target_key = board_mapping[selected_board]
+target_file_name = SCOREBOARD_FILES[target_key]
+
+if os.path.exists(target_file_name):
+    with open(target_file_name, "r", encoding="utf-8") as file:
+        log_data = file.read()
+    st.text_area(f"File Output Viewer [{target_file_name}]:", value=log_data, height=150)
 else:
-    st.info("No scores saved yet! Submit a prompt in the Test Lab to generate the log file.")
+    st.info(f"No records written to '{target_file_name}' yet!")
