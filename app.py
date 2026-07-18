@@ -77,6 +77,11 @@ def evaluate_prompt_string(prompt):
     score += word_count
     metrics_passed.append(f"Linguistic Scale Expansion: +{word_count} Points")
 
+    # --- CRITICAL UPDATE: SCORE LIMIT CAP EXFORCED AT 100 ---
+    if score > 100:
+        metrics_passed.append(f"⚠️ Score capped at maximum limit (Raw calculated value was {score}).")
+        score = 100
+
     return score, metrics_passed
 
 # --- GRAPH RENDERER ---
@@ -92,7 +97,9 @@ def render_analytics_graph():
     ax.set_xticks(attempts)
     ax.set_xticklabels(["Try 1", "Try 2", "Try 3"], color='white', fontsize=8)
     ax.tick_params(colors='white', labelsize=8)
-    ax.set_ylim(0, 180)
+    
+    # Adjusted ceiling boundary to 110 so a 100-point capped max line sits perfectly near the top
+    ax.set_ylim(0, 110) 
     ax.grid(True, color='#2c3d47', linestyle='--')
     st.pyplot(fig)
 
@@ -200,7 +207,6 @@ elif st.session_state.current_page == "Master Gate":
     with col1:
         if st.button("Yes, I am ready.", use_container_width=True):
             st.session_state.master_confirmed = True
-            # Log successful track entry configuration mapping
             save_score_to_disk(st.session_state.username or "Anonymous", "Accessed True Master Course Syllabus Structure", 0, "true master")
             st.session_state.current_page = "Syllabus"
             st.rerun()
