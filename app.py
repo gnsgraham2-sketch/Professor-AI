@@ -2,6 +2,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import os
 import re
+from google import genai
 
 # --- LEVEL-SPECIFIC SCOREBOARD MAP ---
 SCOREBOARD_FILES = {
