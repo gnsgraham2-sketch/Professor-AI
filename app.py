@@ -4,6 +4,13 @@ import os
 import re
 from google import genai
 
+# ==============================================================================
+# 🔑 API KEY CONFIGURATION PLACEHOLDER
+# You can paste your API key inside the quotes below, or enter it via the web app input field!
+# ==============================================================================
+HARDCODED_API_KEY = "AQ.Ab8RN6L772tqGW_KGm9oGn9dT0DpBKtEo6PwtK5NgUA9IStsHQ"  # <-- PASTE YOUR GEMINI API KEY HERE
+
+
 # --- LEVEL-SPECIFIC SCOREBOARD MAP ---
 SCOREBOARD_FILES = {
     "beginner": "scores_beginner.txt",
@@ -12,7 +19,7 @@ SCOREBOARD_FILES = {
     "true master": "scores_truemaster.txt"
 }
 
-# Initialize global variables
+# Initialize global state variables
 if "user_scores" not in st.session_state:
     st.session_state.user_scores = []
 if "current_try" not in st.session_state:
@@ -27,6 +34,8 @@ if "selected_topic" not in st.session_state:
     st.session_state.selected_topic = None
 if "master_confirmed" not in st.session_state:
     st.session_state.master_confirmed = False
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 def save_score_to_disk(username, prompt, score, level):
     target_file = SCOREBOARD_FILES.get(level, "scores_general.txt")
@@ -35,7 +44,6 @@ def save_score_to_disk(username, prompt, score, level):
             if level == "true master":
                 file.write(f"User: {username} | Action: {prompt}\n")
             else:
-                # Clean prompt of newlines to preserve simple 1-line log parsing structure
                 clean_prompt = prompt.replace('\n', ' ')
                 file.write(f"User: {username} | Try: {st.session_state.current_try} | Score: {score} | Prompt: {clean_prompt}\n")
     except Exception as e:
@@ -210,12 +218,106 @@ elif st.session_state.current_page == "User Setup":
 elif st.session_state.current_page == "Dashboard":
     st.title("🎓 Dashboard")
     st.write(f"Logged in as: **{st.session_state.username}**")
+    
     if st.button("Create a New Chat"):
         st.session_state.current_page = "Difficulty"
         st.rerun()
+
+    if st.button("🤖 Chat with GramAI Assistant"):
+        st.session_state.current_page = "Chatbot"
+        st.rerun()
+
     if st.button("Logout / Back"):
         st.session_state.current_page = "User Setup"
         st.rerun()
+
+elif st.session_state.current_page == "Chatbot":
+    st.title("🤖 GramAI Evaluation Assistant")
+    st.write("Submit any prompt to get an AI answer, a Professor Level score out of 100, and actionable feedback.")
+    
+    # Use hardcoded key if filled out, otherwise fall back to UI text entry
+    if HARDCODED_API_KEY and HARDCODED_API_KEY != "YOUR_GEMINI_API_KEY_HERE":
+        active_api_key = HARDCODED_API_KEY
+    else:
+        active_api_key = st.text_input("Enter your Gemini API Key:", type="password", key="gemini_api_key")
+    
+    if not active_api_key:
+        st.info("🔑 Please paste your API key in `app.py` or enter it above to activate the evaluation assistant.")
+    else:
+        try:
+            client = genai.Client(api_key=active_api_key)
+
+            # Display chat message history
+            for message in st.session_state.chat_history:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+
+            # Accept new prompt input
+            if user_input := st.chat_input("Type your prompt here for evaluation and response..."):
+                with st.chat_message("user"):
+                    st.markdown(user_input)
+                st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+                # ==============================================================================
+                # 🎯 PROFESSOR LEVEL SCORING SYSTEM INSTRUCTION PROMPT
+                # ==============================================================================
+                system_evaluation_prompt = f"""
+                You are GramAI Assistant, an expert prompt engineering evaluator and tutor.
+                
+                Analyze the user's prompt using the strictly defined PROFESSOR LEVEL scoring framework below:
+                
+                --- PROFESSOR LEVEL SCORING RULES ---
+                1. Persona Validation (+20 pts): Prompt explicitly specifies a role/profession (e.g., tutor, teacher, doctor, lawyer, engineer, scientist, programmer, expert, professor).
+                2. Inquiry Structure (+40 pts): Prompt contains interrogative question formatting or ends with a question mark (e.g., starts with what, how, why, can, could, where, who, is, are).
+                3. Command Density (+20 pts OR -10 penalty): Must contain AT LEAST 5 action keywords (keywords: explain, summarize, analyze, simplify, debug, format, list, bullet, limit).
+                   - If 5+ action keywords are present: +20 points.
+                   - If FEWER than 5 action keywords are present: Deduct 10 points (-10 penalty).
+                4. Linguistic Expansion (+1 point per word): Add 1 point per word in the user's prompt.
+                5. Total Score Rules: Min score = 0, Max capped score = 100.
+                
+                --- REQUIRED OUTPUT FORMAT ---
+                Format your output into three distinct markdown sections:
+
+                ### 📊 Professor Level Prompt Evaluation
+                - **Final Score**: [Score]/100
+                - **Score Breakdown**:
+                  - Persona Validation: [Met / Not Met]
+                  - Inquiry Structure: [Met / Not Met]
+                  - Command Density: [Met / Failed (-10 Penalty)] (Action keywords found: [count]/5)
+                  - Linguistic Expansion: +[word count] points
+                
+                ### 💡 Constructive Feedback & How to Improve
+                Provide clear, actionable advice on how to improve this prompt based on any missed scoring parameters (e.g., adding an expert persona, using 5+ action keywords, or framing a direct question). Show a rewritten 'Master' version of their prompt as an example.
+
+                ---
+                ### 🤖 Response to Prompt
+                Directly answer the user's original request or question thoroughly and accurately.
+                
+                User Prompt: "{user_input}"
+                """
+
+                with st.chat_message("assistant"):
+                    with st.spinner("GramAI Assistant is grading and responding..."):
+                        response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=system_evaluation_prompt
+                        )
+                        st.markdown(response.text)
+                st.session_state.chat_history.append({"role": "assistant", "content": response.text})
+
+        except Exception as e:
+            st.error(f"Gemini API Error: {e}")
+
+    st.write("---")
+    col_back, col_clear = st.columns(2)
+    with col_back:
+        if st.button("↩ Return to Dashboard"):
+            st.session_state.current_page = "Dashboard"
+            st.rerun()
+    with col_clear:
+        if st.button("🗑️ Clear Chat History"):
+            st.session_state.chat_history = []
+            st.rerun()
 
 elif st.session_state.current_page == "Difficulty":
     st.title("Select Your Difficulty Level")
@@ -336,14 +438,12 @@ if os.path.exists(target_file_name):
             if not line.strip():
                 continue
             if target_key == "true master":
-                # True master logs actions instead of numeric scores
                 user_match = re.search(r"User:\s*([^|]+)", line)
                 action_match = re.search(r"Action:\s*(.+)", line)
                 u = user_match.group(1).strip() if user_match else "Unknown"
                 act = action_match.group(1).strip() if action_match else "N/A"
                 parsed_entries.append({"User": u, "Action Logged": act, "_sort_val": 0})
             else:
-                # Regular metrics lines parsing via regex
                 user_match = re.search(r"User:\s*([^|]+)", line)
                 try_match = re.search(r"Try:\s*(\d+)", line)
                 score_match = re.search(r"Score:\s*(\d+)", line)
@@ -358,16 +458,11 @@ if os.path.exists(target_file_name):
     
     if parsed_entries:
         if target_key == "true master":
-            # Display master course log entries sequentially
             st.dataframe(parsed_entries, use_container_width=True)
         else:
-            # Sort entries from highest to lowest score
             sorted_entries = sorted(parsed_entries, key=lambda x: x["_sort_val"], reverse=True)
-            
-            # Reconstruct dictionary rows to include ranking metrics seamlessly
             leaderboard_table = []
             for rank_index, item in enumerate(sorted_entries, start=1):
-                # Format rankings into readable ordinal positions (e.g. 1st, 2nd, 3rd)
                 if rank_index == 1: suffix = "st"
                 elif rank_index == 2: suffix = "nd"
                 elif rank_index == 3: suffix = "rd"
