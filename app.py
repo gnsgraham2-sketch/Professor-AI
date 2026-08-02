@@ -3,13 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import re
 from google import genai
-import streamlit_html as html
 
-# Google AdSense Verification Script
-html.st_html("""
-<script async src="https://googlesyndication.com"
-     crossorigin="anonymous"></script>
-""")
 # ==============================================================================
 # 🔑 API KEY CONFIGURATION PLACEHOLDER
 # You can paste your API key inside the quotes below, or enter it via the web app input field!
