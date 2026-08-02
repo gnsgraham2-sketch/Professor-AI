@@ -2,4 +2,3 @@ streamlit
 pillow
 matplotlib
 google-genai
-streamlit-html
