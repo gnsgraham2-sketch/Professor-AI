@@ -159,7 +159,7 @@ ad_code = """
 components.html(ad_code, width=180, height=320)
 st.markdown(
     """
-    <style>
+<style>
     .stApp { background-color: #7FFFD4; color: #111E25; }
     h1, h2, h3 { color: #111E25 !important; font-family: 'Helvetica Neue', sans-serif; }
     .hero-text { font-size: "1.2rem"; line-height: 1.6; color: #111E25; margin-bottom: 25px; }
