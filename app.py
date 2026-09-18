@@ -143,7 +143,20 @@ TOPICS = {
 
 # --- WEB APP NAVIGATION & LAYOUT ---
 st.set_page_config(page_title="GramAI | Mastery Platform", page_icon="🤖", layout="centered")
+ad_code = """
+<script type="text/javascript">
+    atOptions = {
+        'key' : '2a0817139b81110a48b701f1166e493c',
+        'format' : 'iframe',
+        'height' : 300,
+        'width' : 160,
+        'params' : {}
+    };
+</script>
+<script type="text/javascript" src="//highperformanceformat.com"></script>
 
+# Set the height and width slightly larger than the ad to avoid scrollbars
+components.html(ad_code, width=180, height=320)
 st.markdown("""
     <style>
     .stApp { background-color: #7FFFD4; color: #111E25; }
