@@ -157,8 +157,7 @@ ad_code = """
 
 # Set the height and width slightly larger than the ad to avoid scrollbars
 components.html(ad_code, width=180, height=320)
-st.markdown(
-    """
+st.markdown("""
 <style>
     .stApp { background-color: #7FFFD4; color: #111E25; }
     h1, h2, h3 { color: #111E25 !important; font-family: 'Helvetica Neue', sans-serif; }
