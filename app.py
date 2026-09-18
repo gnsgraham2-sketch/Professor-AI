@@ -162,7 +162,7 @@ st.markdown(
     <style>
     .stApp { background-color: #7FFFD4; color: #111E25; }
     h1, h2, h3 { color: #111E25 !important; font-family: 'Helvetica Neue', sans-serif; }
-    .hero-text { font-size: 1.2rem; line-height: 1.6; color: #111E25; margin-bottom: 25px; }
+    .hero-text { font-size: "1.2rem"; line-height: 1.6; color: #111E25; margin-bottom: 25px; }
     .feature-box { background-color: rgba(17, 30, 37, 0.05); padding: 20px; border-radius: 12px; border-left: 5px solid #111E25; }
     div.stButton > button { background-color: #111E25; color: white; border-radius: 8px; font-weight: bold; width: 100%; height: 50px; }
     
